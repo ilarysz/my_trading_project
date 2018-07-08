@@ -2,8 +2,6 @@ import json
 import requests
 import Utils
 
-url_path = "https://stream-practice.oanda.com/v3/accounts/{}/pricing/stream".format(Utils.account_id)
-
 
 class Request:
     def __init__(self):
@@ -11,6 +9,7 @@ class Request:
         self.method = None
         self.header = None
         self.params = None #Query
+        self.data = None
 
     def set_path(self):
         url_path = "https://api-fxpractice.oanda.com/v3/"
