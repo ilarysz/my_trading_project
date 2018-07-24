@@ -1,7 +1,5 @@
 from Connection import Database, CursorCreator
-from datetime import datetime
 import pandas as pd
-import numpy as np
 from Utils import connection_data
 
 Database.create_pool(**connection_data)
@@ -24,11 +22,13 @@ class DataHandler:
         with CursorCreator() as cursor_1:
             cursor_1.execute('SELECT * FROM %s' % self.database[choice])
             self.data_frame = pd.DataFrame(cursor_1.fetchall())
-            cursor_1.execute("select column_name from information_schema.columns where table_name='%s'" % self.database[choice])
+            cursor_1.execute("select column_name from information_schema.columns where table_name='%s'" %
+                             self.database[choice])
             result = cursor_1.fetchall()
             self.data_frame.columns = [(lambda x: x[0])(x) for x in result]
-            self.data_frame['changed'] = 1
-            self.data_frame.loc[1, 'o'] = 120.0
+            # Lines for testing purposes:
+            # self.data_frame['changed'] = 1
+            # self.data_frame.loc[1, 'o'] = 120.0
             return self.data_frame
 
     def write_to_db(self, choice):
@@ -39,7 +39,8 @@ class DataHandler:
         #         for item in range(0, 7, 1):
         #             temp.append(self.data_frame.iloc[row][item])
         #         cursor_2.execute("INSERT INTO writing VALUES (%s, %s, %s, %s, %s, %s, %s)",
-        #                          (int(temp[0]), str(temp[1]), str(temp[2]), float(temp[3]), float(temp[4]), float(temp[5]), float(temp[6])))
+        #                          (int(temp[0]), str(temp[1]), str(temp[2]), float(temp[3]), float(temp[4]),
+        #                           float(temp[5]), float(temp[6])))
         #         temp = []
 
         with CursorCreator() as cursor_2:
