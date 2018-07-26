@@ -1,6 +1,5 @@
 from tkinter import *
 from Data_Reader import DataHandler
-from Trading_Engine import Request
 
 
 class Application(Frame):
@@ -19,18 +18,14 @@ class Application(Frame):
         self.request_data()
 
     def load_from_db(self):
-        self.record = None
-        self.my_df = None
-        self.record = DataHandler()
-        self.my_df = self.record.create_df()
+        self.db_handler = DataHandler()
         self.result.delete(0.0, END)
-        self.result.insert(0.0, self.my_df)
+        self.result.insert(0.0, self.db_handler.create_df(0)) # 0 hard-coded for testing purposes
 
     def request_data(self):
         self.current_price = Text(self, width=20, height=1, wrap=WORD)
-        r = Request()
-        r_output = r.perform_request()
-        self.current_price.insert(0.0, r_output)
+        price_handler = DataHandler()
+        self.current_price.insert(0.0, price_handler.read_from_api('pricing', 2, 'pricing')['bid'])
         Label(self, text='Current EUR_USD price', bg='white', width=20).grid(row=4, column=0, sticky=N)
         self.current_price.grid(row=4, column=1, sticky=W)
 

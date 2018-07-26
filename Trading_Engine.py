@@ -88,6 +88,7 @@ class RequestInstrument:
         # At the end date and time column is converted to more convenient format
         self.df_candles['time'] = self.df_candles['time'].apply(
             (lambda x: datetime.strptime(x, '%Y-%m-%dT%H:%M:%S.%f000Z').strftime('%Y-%m-%d %H:%M')))
+        self.df_candles['changed'] = 1
 
 
 class RequestPricing:
@@ -148,7 +149,7 @@ class RequestPricing:
 
     def perform_request(self, type_choice='pricing', pair_choice=0):
         """Launches all functions that prepare HTTP request to be performed and the make the request. Received data
-        are converted to data frame with another method and then shall be taken by interface"""
+        are converted to /dictionary/ with another method and then shall be taken by interface"""
         self.set_path(type_choice)
         self.set_method()
         self.set_header()
@@ -159,18 +160,13 @@ class RequestPricing:
         r_loaded = json.loads(r.content)
         self.pricing = {'pair': r_loaded['prices'][0]['instrument'], 'bid': r_loaded['prices'][0]['bids'][0]['price'],
                         'aks': r_loaded['prices'][0]['asks'][0]['price']}
-        # Code piece left for checking purposes:
-        # print(r_loaded)
-        # print(r_loaded['prices'][0]['bids'][0]['price'])
-        # print(r_loaded['prices'][0]['asks'][0]['price'])
-        # print(r_loaded['prices'][0]['instrument'])
         return self.pricing
 
 
-r = RequestInstrument()
-r.perform_request(pair_choice=1)
-print(r)
-
-s = RequestPricing()
-pricing = s.perform_request()
-print(pricing)
+# r = RequestInstrument()
+# r.perform_request(pair_choice=1)
+# print(r)
+#
+# s = RequestPricing()
+# pricing = s.perform_request()
+# print(pricing)
