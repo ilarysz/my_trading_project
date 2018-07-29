@@ -5,7 +5,9 @@ from Utils import connection_data
 import Trading_Engine
 
 Database.create_pool(**connection_data)
-
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.expand_frame_repr', False)
 
 class DataHandler:
 
