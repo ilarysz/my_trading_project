@@ -13,8 +13,8 @@ class RequestInstrument:
         self.params = None  # Query
         self.data = None
         self.df_candles = None
-        self.major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF",
-                            "USD_JPY")
+        self.major_pairs = ("EUR_USD", "USD_JPY", "GBP_USD", "AUD_USD", "EUR_CHF", "GBP_JPY", "USD_CHF", "NZD_USD",
+                            "USD_CAD")
 
     def __repr__(self):
         """Prints carried data frame, checking purposes"""
@@ -47,24 +47,24 @@ class RequestInstrument:
         self.header = {'Authorization': Utils.token, "Accept-Datetime-Format": "RFC3339"}
         return self.header
 
-    def set_params(self, candles_count=150, set_granularity='H1'):
+    def set_params(self):
         """All param types are included here http://developer.oanda.com/rest-live-v20/instrument-ep/. Number
         of candles shall fit the quarter of the screen."""
         # Params can be extended with 'includeFirst': True
         # A flag that controls whether the candlestick that is covered by the from time should be included in the
         # results. This flag enables clients to use the timestamp of the last completed candlestick received to poll
         # for future candlesticks but avoid receiving the previous candlestick repeatedly. [default=True]
-        self.params = {'price': 'B', 'granularity': set_granularity, 'count': candles_count, 'smooth': 'False',
-                       'dailyAlignment': 17, 'alignmentTimezone': 'America/New_York', 'weeklyAlignment': 'Friday'}
+        self.params = {'price': 'B', 'granularity': 'H1', 'count': 150, 'smooth': 'False', 'dailyAlignment': 17,
+                       'alignmentTimezone': 'America/New_York', 'weeklyAlignment': 'Friday'}
         return self.params
 
-    def perform_request(self, candles_count, set_granularity, pair_choice):
+    def perform_request(self, pair_choice=0):
         """Launches all functions that prepare HTTP request to be performed and the make the request. Received data
         are converted to data frame with another method and then shall be taken by interface"""
         self.set_path(pair_choice)
         self.set_method()
         self.set_header()
-        self.set_params(candles_count, set_granularity)
+        self.set_params()
         self.convert_to_data_frame(json.loads(
             request(self.method, self.path, headers=self.header, params=self.params).content))
         return self.df_candles
@@ -159,14 +159,13 @@ class RequestPricing:
         # print(r.url)
         r_loaded = json.loads(r.content)
         self.pricing = {'pair': r_loaded['prices'][0]['instrument'], 'bid': r_loaded['prices'][0]['bids'][0]['price'],
-                        'asks': r_loaded['prices'][0]['asks'][0]['price']}
+                        'aks': r_loaded['prices'][0]['asks'][0]['price']}
         return self.pricing
 
 
 # r = RequestInstrument()
-# r.perform_request(pair_choice=1, candles_count=150, set_granularity='H1')
+# r.perform_request(pair_choice=1)
 # print(r)
-
 #
 # s = RequestPricing()
 # pricing = s.perform_request()

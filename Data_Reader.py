@@ -9,6 +9,7 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.expand_frame_repr', False)
 
+
 class DataHandler:
 
     def __init__(self):
@@ -75,13 +76,13 @@ class DataHandler:
                 temp[pos] = float(temp[pos])
         return temp
 
-    def read_from_api(self, request_type, pair_choice, streaming_type='pricing'):
+    def read_from_api(self, request_type, pair_choice, candles_count, set_granularity, streaming_type='pricing'):
         """Function used to gather data from the Oanda API"""
         # Functions calls objects from Trading Engine basing on the input from interface
         # Objects shall live only inside DataHandler, returned for printing purposes
         if request_type == 'history':
             self.engine_object = Trading_Engine.RequestInstrument()
-            self.data_frame = self.engine_object.perform_request(pair_choice)
+            self.data_frame = self.engine_object.perform_request(candles_count, set_granularity, pair_choice)
             return self.data_frame
         elif request_type == 'pricing':
             self.engine_object = Trading_Engine.RequestPricing()
