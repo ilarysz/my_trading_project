@@ -482,7 +482,7 @@ class Application(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
-        tk.Tk.wm_iconbitmap(self, bitmap="chart.ico")
+        tk.Tk.wm_iconbitmap(self, bitmap="Additional\chart.ico")
         tk.Tk.wm_title(self, "Trading Station")
 
         container = tk.Frame(self)
