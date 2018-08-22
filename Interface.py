@@ -266,8 +266,38 @@ def create_bottom_indicator(pricing_data_frame):
                                                                                 ignore_na=True).mean()
         pricing_data_frame['histogram'] = pricing_data_frame['macd_line'] - pricing_data_frame['signal_line']
         return pricing_data_frame
+
     elif bottom_indicator[0] == 'rsi':
-        return 0
+        # Method of calculating RSI: in n-day window close-open values are calculated, separate n-day moving averages
+        # for upsides and downsides are created. Relation of it is called "RS" which is about to be used in
+        # 100 - (100/(1 + RS))
+
+        # np.apply_along_axis: 0 - across columns, 1 across rows
+        # Function used for comparisons
+        def compare(x):
+            # By default returns proper results for "up" column
+            if x > 0:
+                return x
+            else:
+                return np.nan
+
+        # Basing on the close-open comparison create lists that are passed into array
+        # "Down" x value is modified to return proper value from function, RSI has no negative value so returned x
+        # is converted just after it is returned and passed to the list
+        # In averages NaN is returned if there was only one type of candle, it is converted to, proper in that case, 0
+        pricing_data_frame['c'] = [float(x) for x in pricing_data_frame['c']]
+        pricing_data_frame['o'] = [float(x) for x in pricing_data_frame['o']]
+        pricing_data_frame['up'] = [compare(x) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
+        pricing_data_frame['down'] = [abs(compare(-x)) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
+        pricing_data_frame['up_average'] = pricing_data_frame['up'].rolling(bottom_indicator[1], min_periods=1).mean()
+        pricing_data_frame['down_average'] = pricing_data_frame['down'].rolling(bottom_indicator[1],
+                                                                                min_periods=1).mean()
+        np.nan_to_num(pricing_data_frame['up_average'], False)
+        np.nan_to_num(pricing_data_frame['down_average'], False)
+        pricing_data_frame['RS'] = pricing_data_frame['up_average'] / pricing_data_frame['down_average']
+        pricing_data_frame['RSI'] = 100 - (100 / (1 + pricing_data_frame['RS']))
+
+        return pricing_data_frame
 
 
 def create_chart_indicator(pricing_data_frame):
@@ -347,8 +377,22 @@ def animate(i):
                 # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
                 a2.set_ylabel("MACD")
             elif bottom_indicator[0] == 'rsi':
-                # --- RSI function not prepared
-                pass
+                a2.plot(range(len(pricing_dates[cut:])), history_data[cut:]['RSI'])
+                a2.xaxis.set_major_locator(mpl_ticker.MaxNLocator(16))
+                tick_labels = a2.get_xticklabels(which='both')
+                for pos, label in enumerate(tick_labels):
+                    try:
+                        tick_labels[pos] = str(
+                            pricing_dates[int(round(pos * (len(pricing_dates) / len(tick_labels)), 0))])[:10]
+                    except LookupError:
+                        tick_labels[pos] = pricing_dates[-1]
+                a2.set_xticklabels(tick_labels)
+                for label in a2.xaxis.get_ticklabels():
+                    label.set_rotation(30)
+                # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
+                a2.set_ylabel("RSI")
+                a2.axhline(80, lw=1, ls='--', color='red')
+                a2.axhline(20, lw=1, ls='--', color='green')
             else:
                 raise RuntimeError("Indicator not defined")
 
@@ -399,8 +443,22 @@ def animate(i):
                 # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
                 a2.set_ylabel("MACD")
             elif bottom_indicator[0] == 'rsi':
-                # --- RSI function not prepared
-                pass
+                a2.plot(range(len(pricing_dates[cut:])), history_data[cut:]['RSI'])
+                a2.xaxis.set_major_locator(mpl_ticker.MaxNLocator(16))
+                tick_labels = a2.get_xticklabels(which='both')
+                for pos, label in enumerate(tick_labels):
+                    try:
+                        tick_labels[pos] = str(
+                            pricing_dates[int(round(pos * (len(pricing_dates) / len(tick_labels)), 0))])[:10]
+                    except LookupError:
+                        tick_labels[pos] = pricing_dates[-1]
+                a2.set_xticklabels(tick_labels)
+                for label in a2.xaxis.get_ticklabels():
+                    label.set_rotation(30)
+                # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
+                a2.set_ylabel("RSI")
+                a2.axhline(80, lw=1, ls='--', color='red')
+                a2.axhline(20, lw=1, ls='--', color='green')
             else:
                 raise RuntimeError("Indicator not defined")
 
