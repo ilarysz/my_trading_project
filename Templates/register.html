@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block head %}
+    Register
+{% endblock %}
+
+{% block body %}
+    <form action="/register" method="post">
+        <div class="row justify-content-center">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input class="form-control" type="text" id="username" name="username" placeholder="Type in your username">
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input class="form-control" type="password" id="password" name="password" placeholder="Type in your username">
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="form-group">
+                <label for="mail">E-mail</label>
+                <input type='text' class="form-control" placeholder="Enter your email" id="mail" name="mail">
+                <small id="mail_help" class="form-text text-muted">Used only for confirmation.</small>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <button class="btn btn-primary" type="submit">
+                Submit
+            </button>
+        </div>
+    </form>
+{% endblock %}

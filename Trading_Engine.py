@@ -4,6 +4,8 @@ import Utils
 import pandas as pd
 from datetime import datetime
 
+major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF", "USD_JPY")
+
 
 class RequestInstrument:
     def __init__(self):
@@ -13,8 +15,7 @@ class RequestInstrument:
         self.params = None  # Query
         self.data = None
         self.df_candles = None
-        self.major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF",
-                            "USD_JPY")
+        self.major_pairs = major_pairs
 
     def __repr__(self):
         """Prints carried data frame, checking purposes"""
@@ -99,8 +100,7 @@ class RequestPricing:
         self.params = None  # Query
         self.data = None
         self.df_candles = None
-        self.major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF",
-                            "USD_JPY")
+        self.major_pairs = major_pairs
         self.pricing = None
 
     def __repr__(self):

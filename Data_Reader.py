@@ -16,7 +16,7 @@ class DataHandler:
         self.data_frame = None
         self.database = ['core', 'api_point', 'api_history']
         self.engine_object = None
-        self.enginge_dict = None
+        self.engine_dict = None
 
     def __repr__(self):
         if self.data_frame.any:
@@ -24,21 +24,30 @@ class DataHandler:
         else:
             return 'Object without loaded table'
 
-    def create_df(self, choice):
+    def create_df(self, database_to_read=0, read_method='default', custom_command=None):
         """Creates data frame from loaded records"""
-        with CursorCreator() as cursor_1:
-            cursor_1.execute('SELECT * FROM %s' % self.database[choice])
-            self.data_frame = pd.DataFrame(cursor_1.fetchall())
-            cursor_1.execute("select column_name from information_schema.columns where table_name='%s'" %
-                             self.database[choice])
-            result = cursor_1.fetchall()
-            self.data_frame.columns = [(lambda x: x[0])(x) for x in result]
-            # Lines for testing purposes:
-            self.data_frame['changed'] = 1
-            # self.data_frame.loc[1, 'o'] = 120.0
-            return self.data_frame
+        if read_method == 'default':
+            with CursorCreator() as cursor_1:
+                cursor_1.execute('SELECT * FROM %s' % self.database[database_to_read])
+                self.data_frame = pd.DataFrame(cursor_1.fetchall())
+                cursor_1.execute("select column_name from information_schema.columns where table_name='%s'" %
+                                 self.database[database_to_read])
+                result = cursor_1.fetchall()
+                self.data_frame.columns = [(lambda x: x[0])(x) for x in result]
+                self.data_frame['changed'] = 0
+                return self.data_frame
 
-    def write_to_db(self, choice):
+        elif read_method == 'custom' and custom_command:
+            with CursorCreator() as cursor_1:
+                cursor_1.execute(custom_command)
+                self.data_frame = pd.DataFrame(cursor_1.fetchall())
+                self.data_frame['changed'] = 0
+                return self.data_frame
+
+        else:
+            raise RuntimeError("Wrong read method passed to create_df function or no custom command present")
+
+    def write_to_db(self, choice=0):
         """Basing on the input from the interface loads data from the given table"""
         # Old code not prepared to handle every data frame, shall be deleted if everything is working
         # in the newer lines
@@ -86,14 +95,15 @@ class DataHandler:
             return self.data_frame
         elif request_type == 'pricing':
             self.engine_object = Trading_Engine.RequestPricing()
-            self.enginge_dict = self.engine_object.perform_request(streaming_type, pair_choice)
-            return self.enginge_dict
+            self.engine_dict = self.engine_object.perform_request(streaming_type, pair_choice)
+            return self.engine_dict
         else:
             print("Wrong command {}".format(request_type))
 
 
 # record = DataHandler()
-# record.create_df(1)
+# df = record.create_df(0)
+# print(df)
 # record.write_to_db(1)
 
 # r_api = DataHandler()
@@ -101,3 +111,13 @@ class DataHandler:
 
 # r_api = DataHandler()
 # print(r_api.read_from_api('history', 2))
+
+# data_handler = DataHandler()
+# forecasts_df = data_handler.create_df(read_method='custom',
+#                                       custom_command="SELECT symbol, "
+#                                                      "first_s, first_r, "
+#                                                      "h1_trend_f, h4_trend_f, d1_trend_f, w1_trend_f FROM core;")
+#
+# for row in forecasts_df.itertuples():
+#     print(row[1])
+

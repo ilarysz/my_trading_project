@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block head %}
+    Trend forecasts
+{% endblock %}
+
+{% block body %}
+    <table class="table table-hover">
+        <tr>
+            <th>Symbol</th>
+            <th>Support level</th>
+            <th>Resistance level</th>
+            <th>H1 Trend</th>
+            <th>H4 Trend</th>
+            <th>D1 Trend</th>
+            <th>W1 Trend</th>
+        </tr>
+        {% for row in pricing_rows %}
+        <tr>
+            <td style="font:bold;">{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ row[4] }}</td>
+            <td>{{ row[5] }}</td>
+            <td>{{ row[6] }}</td>
+            <td>{{ row[7] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div class="row justify-content-center">
+        <a href="/forecasts/modify">
+            <button class="btn btn-primary" style="width:250px;" type="button">
+                Change
+            </button>
+        </a>
+    </div>
+{% endblock %}

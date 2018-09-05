@@ -39,6 +39,17 @@ chart_indicator = ['name', 0]
 bottom_indicator = ['name', 0, 0, 0]
 show_volume = 'disable'
 animation_status = True
+chart_open = False
+first_time = False
+
+
+def chart_status(status):
+    # Change chart open/close status depending on the commnand origin
+    global chart_open
+    global first_time
+    chart_open = status
+    if chart_open:
+        first_time = True
 
 
 def set_indicators(chart=None, bottom=None, volume=None):
@@ -313,9 +324,8 @@ def create_chart_indicator(pricing_data_frame):
 
 def animate(i):
     """For animation function purposes. It reloads the data basing on the given time frame"""
-    global animation_status
     global f
-    if animation_status:
+    if animation_status and chart_open:
         data_handler = DataHandler()
         # Candles count takes into account requirement from indicators to have extra data
         # In bottom_indicator the highest number is always stored on [1] position
@@ -325,6 +335,7 @@ def animate(i):
                                                   set_granularity=user_granularity_choice, streaming_type="pricing")
         history_data['time'] = np.array(history_data['time']).astype("datetime64[s]")
         pricing_dates = history_data['time'].tolist()
+
         # Plots exclude by using indexing the extra indicators data that are in the data frame
         if bottom_indicator[1] != 0 and chart_indicator[1] != 0:
             print("Chart with bottom indicator and MA initialized")
@@ -629,28 +640,62 @@ class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         # Start page currently only has to show links to other ones and raise them
         # Controller is not passed as it is class Application used only for frame changes
-        tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Home Page", font=LARGE_FONT)
-        label.pack(padx=10, pady=10)
+        tk.Frame.__init__(self, parent, bg='#3E3938')
+        label = tk.Label(self, text="Home Page", font=LARGE_FONT, bg='white', width=150)
+        label.pack(pady=10, anchor='n', fill='x')
+        # label.grid(row=0, column=0, columnspan=1, sticky='N', padx=2, pady=2)
         # Using lambda function to prevent from immediate initialization
         button1 = ttk.Button(self, text="Static chart", command=lambda: controller.show_frame(PageOne))
-        button1.pack()
-        button2 = ttk.Button(self, text="Dynamic chart", command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
+        # button1.grid()
+        button1.pack(side='left', fill='x', expand=True, anchor='n')
+        button2 = ttk.Button(self, text="Dynamic chart", command=lambda: (controller.show_frame(PageTwo),
+                                                                          chart_status(True)))
+        # button2.grid()
+        button2.pack(side='left', fill='x', expand=True, anchor='n')
+        button3 = ttk.Button(self, text='Test', command=lambda: controller.show_frame(PageOne))
+        # button3.grid()
+        button3.pack(side='left', fill='x', expand=True, anchor='n')
 
 
 class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Static chart page", font=LARGE_FONT)
-        label.pack(padx=10, pady=10)
+        tk.Frame.__init__(self, parent, bg='#3E3938')
+        fake_label = tk.Label(self, text='', width=194, bg='#3E3938', anchor='e', height=1)
+        fake_label.grid(row=0, column=0, columnspan=194)
+        fake_label_2 = tk.Label(self, text='', width=1, height=44, anchor='s', bg='#3E3938')
+        fake_label_2.grid(row=1, column=0, rowspan=44)
+        label = tk.Label(self, text="Static chart page", font=LARGE_FONT, width=20, bg='#3E3938', fg='white')
+        label.grid(row=1, column=97)
+        # label.pack(padx=10, pady=10)
         # Using lambda function to prevent from immediate initialization
-        button1 = ttk.Button(self, text="Return to Home Page", command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        button1 = ttk.Button(self, text="Return to Home Page", width=20,
+                             command=lambda: controller.show_frame(StartPage))
+        button1.grid(row=2, column=97)
+        # button1.pack()
         # load data that are about to be plotted (only first time the chart is shown) later only the last candle
         # is updated with usage of animate function
-        self.create_chart()
+        # self.create_chart()
+        self.create_table()
+
+    def create_table(self):
+        label_1 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        label_2 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        label_3 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        label_4 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        label_5 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        label_6 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
+        canvas_fill = tk.Canvas(self, bg='white', height=10, width=10)
+        canvas_fill.create_polygon(10,10,10,10)
+        fake_label = tk.Label(self, bg='white', width=18)
+        label_1.grid(row=5, column=10, columnspan=8)
+        label_2.grid(row=5, column=19, columnspan=8)
+        label_3.grid(row=5, column=28, columnspan=8)
+        fake_label.grid(row=6, column=10, columnspan=24)
+        label_4.grid(row=7, column=10, columnspan=8)
+        label_5.grid(row=7, column=19, columnspan=8)
+        label_6.grid(row=7, column=28, columnspan=8)
+        canvas_fill.grid(row=4, column=9, columnspan=30, rowspan=10)
 
     def create_chart(self, load_from='api', user_pair_choice=0):
         # data_handler is responsible to load data from API and SQL database
@@ -688,13 +733,13 @@ class PageTwo(tk.Frame):
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text='Dynamic chart page', font=LARGE_FONT)
         label.pack(padx=10, pady=10)
-        button1 = ttk.Button(self, text='Return to Home Page', command=lambda: controller.show_frame(StartPage))
+        button1 = ttk.Button(self, text='Return to Home Page', command=lambda: (controller.show_frame(StartPage),
+                                                                                chart_status(False)))
         button1.pack()
         self.create_chart()
 
     def create_chart(self):
         # PageTwo chart is animated and most of it is created in the outer (animate) function
-
         # First create object provided by matplotlib library, standard plotting with usage of it
         # And getting widget with subsequent placing on the grid
         canvas = FigureCanvasTkAgg(f, self)
@@ -711,5 +756,6 @@ class PageTwo(tk.Frame):
 app = Application()
 app.geometry("1280x720")
 # Due to use of animation plotting function lives outside any objects
+# Activate animation only if chart page is open
 ani = animation.FuncAnimation(f, animate, interval=5000)
 app.mainloop()

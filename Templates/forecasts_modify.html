@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block head %}
+    Home Page
+{% endblock %}
+
+{% block body %}
+    <form action="/forecasts/modify" method="post" style="padding:10px;">
+        {% for row in pricing_rows %}
+        <div class="row justify-content-center">
+            <div class="form-group">
+                <label for="resistance">{{ row[1] }}</label>
+                <input type="text" class="form-control" placeholder="First resistance" id="resistance" name="resistance of {{ row[1] }}">
+                <input type="text" class="form-control" placeholder="First support" id="support" name="support of {{ row[1] }}">
+                <input type="text" class="form-control" placeholder="H1 Trend" id="h1_trend" name="h1_trend of {{ row[1] }}">
+                <input type="text" class="form-control" placeholder="H4 Trend" id="h4_trend" name="h4_trend of {{ row[1] }}">
+                <input type="text" class="form-control" placeholder="D1 Trend" id="d1_trend" name="d1_trend of {{ row[1] }}">
+                <input type="text" class="form-control" placeholder="W1 Trend" id="w1_trend" name="w1_trend of {{ row[1] }}">
+            </div>
+        </div>
+        {% endfor %}
+        <div class="row justify-content-center">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+    </form>
+{% endblock %}
