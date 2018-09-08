@@ -22,7 +22,7 @@
                     <a class="nav-link" href="/logout">Logout</a>
                 </li>
                 <li class="navbar-item">
-                    <a class="nav-link" href="/trends">Trends</a>
+                    <a class="nav-link" href="{{ url_for('trends', requested_ma_type='Simple', requested_interval='14') }}">Trends</a>
                 </li>
                 <li class="navbar-item">
                     <a class="nav-link" href="/forecasts">Forecasts</a>

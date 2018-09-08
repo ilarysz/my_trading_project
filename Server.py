@@ -1,10 +1,11 @@
 from flask import *
-from Server_utils import login_required
-from Connection import CursorCreator, Database
-from Trading_Engine import RequestPricing, major_pairs
-from Data_Reader import DataHandler
 from tempfile import mkdtemp
+from Server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest
+from Connection import CursorCreator, Database
+from Trading_Engine import RequestPricing
+from Data_Reader import DataHandler
 from Utils import secret_key, connection_data
+from shared_variables import major_pairs, granularity
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -36,9 +37,9 @@ def index():
 
     # Request pricing for every major pair
     pricing_data = []
-    s = RequestPricing()
-    for pos, pair in enumerate(major_pairs):
-        pricing_data.append(s.perform_request(pair_choice=pos))
+    while not pricing_data:
+        quote = ThreadedPricingRequest()
+        pricing_data = quote.core()
 
     return render_template('index.html', pricing_data=pricing_data)
 
@@ -60,7 +61,6 @@ def login():
             return redirect('/error')
 
         # Try to load user from database
-        # --- TBD --- password hashing
         with CursorCreator() as cursor:
             cursor.execute("SELECT * FROM users WHERE login = '%s'" % username)
             user_data = cursor.fetchall()
@@ -131,6 +131,7 @@ def forecasts():
 
     # Show website that presents data frame and can redirect to another site where data can be changed
     pricing_rows = forecasts_df.itertuples()
+
     return render_template("forecasts.html", pricing_rows=pricing_rows)
 
 
@@ -175,7 +176,8 @@ def forecasts_modify():
                     columns = ['first_r', 'first_s', 'h1_trend_f', 'h4_trend_f', 'd1_trend_f', 'w1_trend_f']
                     for column in range(len(columns)):
                         print("Checking column: ", column)
-                        if str(forecasts_df.iat[row, column+1]).lower() != "nan" and forecasts_df.iat[row, column+1] is not None:
+                        if str(forecasts_df.iat[row, column+1]).lower() != "nan" and forecasts_df.iat[row, column+1] \
+                                is not None:
                             if isinstance(forecasts_df.iat[row, column+1], str):
                                 print("Detected string instance: ", forecasts_df.iat[row, column+1])
                                 cursor.execute("UPDATE core SET {} = '{}' WHERE login = '{}' and symbol = '{}'".
@@ -194,9 +196,31 @@ def forecasts_modify():
         return redirect('/error')
 
 
-@app.route('/trends')
-def trends():
-    pass
+@app.route('/trends/<requested_ma_type>/<requested_interval>', methods=['GET', 'POST'])
+def trends(requested_ma_type, requested_interval=14):
+    if request.method == 'POST':
+        ma_type_form = request.form.get("ma_type")
+        interval_form = request.form.get("interval")
+
+        return redirect(url_for("trends", requested_ma_type=ma_type_form, requested_interval=interval_form))
+
+    elif request.method == 'GET':
+        if requested_ma_type == 'Exponential' or requested_ma_type == 'ema':
+            requested_ma_type = 'ema'
+        elif requested_ma_type == 'Simple' or requested_ma_type == 'sma':
+            requested_ma_type = 'sma'
+        else:
+            raise RuntimeError("MA type not recognized")
+
+        ma_calc = ThreadedMACalculator(ma_type=requested_ma_type, interval=int(requested_interval))
+        ma_data = ma_calc.calculate_mas()
+        print("Retrieved type of MA: ", requested_ma_type, ' of interval: ', requested_interval)
+        return render_template('trends.html', ma_data=ma_data, granularity=granularity, major_pairs=major_pairs,
+                               requested_ma_type=requested_ma_type, requested_interval=requested_interval)
+
+    else:
+        session['message'] = json.dumps("Wrong method used to access given URL")
+        return redirect("error.html", 404)
 
 
 @app.route("/error")

@@ -3,8 +3,7 @@ from requests import request
 import Utils
 import pandas as pd
 from datetime import datetime
-
-major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF", "USD_JPY")
+from shared_variables import major_pairs
 
 
 class RequestInstrument:

@@ -85,7 +85,8 @@ class DataHandler:
                 temp[pos] = float(temp[pos])
         return temp
 
-    def read_from_api(self, request_type, pair_choice, candles_count, set_granularity, streaming_type='pricing'):
+    def read_from_api(self, request_type='history', pair_choice=0, candles_count=150, set_granularity='H1',
+                      streaming_type='pricing'):
         """Function used to gather data from the Oanda API"""
         # Functions calls objects from Trading Engine basing on the input from interface
         # Objects shall live only inside DataHandler, returned for printing purposes
