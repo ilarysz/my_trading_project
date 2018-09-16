@@ -122,6 +122,7 @@ def register():
 
 
 @app.route('/forecasts')
+@login_required
 def forecasts():
     # Page presents current user forecasts according to each pair and enables modifications
     # Read all data from the database
@@ -136,6 +137,7 @@ def forecasts():
 
 
 @app.route('/forecasts/modify', methods=['POST', 'GET'])
+@login_required
 def forecasts_modify():
     # Page allows to change user records in database
     command = "SELECT symbol, first_s, first_r, h1_trend_f, h4_trend_f, d1_trend_f, w1_trend_f FROM core " \
@@ -197,6 +199,7 @@ def forecasts_modify():
 
 
 @app.route('/trends/<requested_ma_type>/<requested_interval>', methods=['GET', 'POST'])
+@login_required
 def trends(requested_ma_type, requested_interval=14):
     if request.method == 'POST':
         ma_type_form = request.form.get("ma_type")
@@ -229,6 +232,7 @@ def error():
 
 
 @app.route("/logout")
+@login_required
 def logout():
     session.clear()
     return redirect(url_for('index'))
