@@ -2,11 +2,11 @@ from flask import *
 from tempfile import mkdtemp
 from Server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest
 from Connection import CursorCreator, Database
-from Trading_Engine import RequestPricing
 from Data_Reader import DataHandler
-from Utils import secret_key, connection_data
+from Utils import secret_key, connection_data, mail_login, mail_password
 from shared_variables import major_pairs, granularity
 from werkzeug.security import generate_password_hash, check_password_hash
+import smtplib
 import json
 
 Database.create_pool(**connection_data)
@@ -113,6 +113,30 @@ def register():
 
         # Add user_id to session (automatic login after registartion)
         session['user_id'] = username
+
+        # Upon process completion send confirmation e-mail
+        mail_msg = "\r\n".join([
+            "From: Trading Station Info",
+            "To: %s" % mail,
+            "MIME-Version: 1.0",
+            "Content-type: text/html",
+            "Subject: Registration confirmation",
+            "",
+            "Hello, <br>",
+            "User <b>%s</b> has been registered <br>" % session['user_id'],
+            "Regards, <br>",
+            "Team"
+        ])
+
+        try:
+            smtp_server = smtplib.SMTP('smtp.gmail.com:587')
+            smtp_server.ehlo()
+            smtp_server.starttls()
+            smtp_server.login(mail_login, mail_password)
+            smtp_server.sendmail(mail_login, mail, mail_msg)
+            smtp_server.quit()
+        except smtplib.SMTPException:
+            print("Could not send confirmation email.")
 
         return redirect('/')
 
