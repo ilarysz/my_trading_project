@@ -59,7 +59,9 @@ class ThreadedMACalculator:
 
     def ma_threader(self):
         while True:
+            # Take one pair number from the queue
             worker = q.get()
+            # Calculate MAs within that function and write them
             self.calculate_single_pair_mas(pair=worker)
             q.task_done()
 
