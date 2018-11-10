@@ -1,6 +1,6 @@
 import json
 from requests import request
-import Utils
+import utils
 import pandas as pd
 from datetime import datetime
 from shared_variables import major_pairs
@@ -27,15 +27,6 @@ class RequestInstrument:
         self.path = ("https://api-fxpractice.oanda.com/v3/instruments/%s/candles" % self.major_pairs[pair_choice])
         return self.path
 
-    # Rest of the path strings that can be used:
-    # def set_path_account(self, choice):
-    #     self.path = "https://api-fxpractice.oanda.com/v3/accounts/{}/".format(Utils.account_id)
-    #     return self.path
-    #
-    # def set_path_default(self, choice):
-    #     self.path = "https://api-fxpractice.oanda.com/v3/"
-    #     return self.path
-
     def set_method(self):
         """For instrument request there is only method 'GET' available"""
         self.method = 'GET'
@@ -44,7 +35,7 @@ class RequestInstrument:
     def set_header(self):
         """Method that not requires any changes across all request types. Token and account number is set in another
         file that is not uploaded"""
-        self.header = {'Authorization': Utils.token, "Accept-Datetime-Format": "RFC3339"}
+        self.header = {'Authorization': utils.token, "Accept-Datetime-Format": "RFC3339"}
         return self.header
 
     def set_params(self, candles_count=150, set_granularity='H1'):
@@ -109,10 +100,10 @@ class RequestPricing:
     def set_path(self, type_choice):
         """Sets the path basing on the choice send from the interface, pairs are sent in query string"""
         if type_choice == 'pricing':
-            self.path = "https://api-fxpractice.oanda.com/v3/accounts/{}/pricing".format(Utils.account_id)
+            self.path = "https://api-fxpractice.oanda.com/v3/accounts/{}/pricing".format(utils.account_id)
         elif type_choice == 'streaming':
             # The sites suggest address containing "fxtrade", to check (!)
-            self.path = "https://stream-fxpractice.oanda.com/v3/accounts/{}/pricing/stream".format(Utils.account_id)
+            self.path = "https://stream-fxpractice.oanda.com/v3/accounts/{}/pricing/stream".format(utils.account_id)
         return self.path
 
     def set_method(self):
@@ -123,7 +114,7 @@ class RequestPricing:
     def set_header(self):
         """Method that not requires any changes across all request types. Token and account number is set in another
         file that is not uploaded"""
-        self.header = {'Authorization': Utils.token, "Accept-Datetime-Format": "RFC3339"}
+        self.header = {'Authorization': utils.token, "Accept-Datetime-Format": "RFC3339"}
         return self.header
 
     def set_params(self, type_choice, pair_choice):
@@ -134,9 +125,9 @@ class RequestPricing:
         date = datetime.now().date()
         # The date for regular weekdays are set with now function, for weekends is one day backward
         if date.weekday() == 5:
-            date = date.replace(day=date.day-1)
+            date = date.replace(day=date.day - 1)
         elif date.weekday() == 6:
-            date = date.replace(day=date.day-2)
+            date = date.replace(day=date.day - 2)
         # The tuple contains sorted currency pairs, they can only be accessed one at the time as requests library
         # sends the query in wrong format (repeats keyword "instrument") and the only last pair is recognized by API
         if type_choice == 'pricing':
@@ -160,13 +151,3 @@ class RequestPricing:
         self.pricing = {'pair': r_loaded['prices'][0]['instrument'], 'bid': r_loaded['prices'][0]['bids'][0]['price'],
                         'asks': r_loaded['prices'][0]['asks'][0]['price']}
         return self.pricing
-
-
-# r = RequestInstrument()
-# r.perform_request(pair_choice=1, candles_count=150, set_granularity='H1')
-# print(r)
-
-#
-# s = RequestPricing()
-# pricing = s.perform_request()
-# print(pricing)

@@ -1,9 +1,9 @@
 from flask import *
 from tempfile import mkdtemp
-from Server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest
-from Connection import CursorCreator, Database
-from Data_Reader import DataHandler
-from Utils import secret_key, connection_data, mail_login, mail_password
+from server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest
+from connection import CursorCreator, Database
+from data_reader import DataHandler
+from utils import secret_key, connection_data, mail_login, mail_password
 from shared_variables import major_pairs, granularity
 from werkzeug.security import generate_password_hash, check_password_hash
 import smtplib
@@ -96,7 +96,7 @@ def register():
         # Hash the password
         password = generate_password_hash(password)
 
-        # Add user to database
+        # Add user to database and check if the name is not taken
         try:
             with CursorCreator() as cursor_1:
                 cursor_1.execute("SELECT * FROM core WHERE login = %s" % username)
@@ -128,6 +128,7 @@ def register():
             "Team"
         ])
 
+        # Send email, credentials are located in utils.py
         try:
             smtp_server = smtplib.SMTP('smtp.gmail.com:587')
             smtp_server.ehlo()
@@ -202,6 +203,8 @@ def forecasts_modify():
                     columns = ['first_r', 'first_s', 'h1_trend_f', 'h4_trend_f', 'd1_trend_f', 'w1_trend_f']
                     for column in range(len(columns)):
                         print("Checking column: ", column)
+                        # Check is uers changed forecast for given pair.
+                        # If so, update row for given user and pair with new data
                         if str(forecasts_df.iat[row, column+1]).lower() != "nan" and forecasts_df.iat[row, column+1] \
                                 is not None:
                             if isinstance(forecasts_df.iat[row, column+1], str):
@@ -225,6 +228,9 @@ def forecasts_modify():
 @app.route('/trends/<requested_ma_type>/<requested_interval>', methods=['GET', 'POST'])
 @login_required
 def trends(requested_ma_type, requested_interval=14):
+    # Shows if pricing for given pair is above or below MA defined by user
+
+    # Set parameters for MA used for comparisons
     if request.method == 'POST':
         ma_type_form = request.form.get("ma_type")
         interval_form = request.form.get("interval")
@@ -232,6 +238,7 @@ def trends(requested_ma_type, requested_interval=14):
         return redirect(url_for("trends", requested_ma_type=ma_type_form, requested_interval=interval_form))
 
     elif request.method == 'GET':
+        # Check query parameters and send them to computation module
         if requested_ma_type == 'Exponential' or requested_ma_type == 'ema':
             requested_ma_type = 'ema'
         elif requested_ma_type == 'Simple' or requested_ma_type == 'sma':

@@ -1,4 +1,4 @@
-from Data_Reader import DataHandler
+from data_reader import DataHandler
 
 import pandas as pd
 import numpy as np
@@ -21,6 +21,7 @@ from tkinter import ttk
 
 from datetime import datetime
 
+# Set font and chart defaults
 LARGE_FONT = ("Verdana", 12)
 NORM_FONT = ("Verdana", 10)
 SMALL_FONT = ("Verdana", 8)
@@ -44,7 +45,7 @@ first_time = False
 
 
 def chart_status(status):
-    # Change chart open/close status depending on the commnand origin
+    # Change chart open/close status depending on the command origin
     global chart_open
     global first_time
     chart_open = status
@@ -57,11 +58,16 @@ def set_indicators(chart=None, bottom=None, volume=None):
     # This function is called from the menu bar
     # Each if statement has to show simple dialog box that allows to customize indicators' periods
     # Highest number is about to be set on second ([1]) position of global variable
-    # No separate description as behavior of each is very similar
+    # Behavior of each part of if statements is very similar
+    # Chart indicator part
     if chart:
+        # Determine the type of chart indicator (currently available: EMA, SMA)
         if chart == "sma":
+            # Evoke new window with settings
             indicator_setter = tk.Tk()
             indicator_setter.wm_title("Configure")
+            # Allow user to set the period of MA
+            # One row of label/entry pair, focus on the entry window
             label1 = ttk.Label(indicator_setter, text="Set the period for moving average")
             label1.pack(padx=10, pady=5)
             entry1 = ttk.Entry(indicator_setter)
@@ -69,7 +75,7 @@ def set_indicators(chart=None, bottom=None, volume=None):
             entry1.pack(padx=10, fill='x')
             entry1.focus_set()
 
-            # After "OK" button is clicked retrieve informations from the entry box, write it to global variables, quit
+            # After "OK" button is clicked retrieve information from the entry box, write it to global variables, quit
             def callback():
                 global chart_indicator
                 chart_indicator[0] = 'sma'
@@ -77,14 +83,17 @@ def set_indicators(chart=None, bottom=None, volume=None):
                 # Send confirmation to console
                 print("Indicator {} set with period of {}".format(chart_indicator[0], chart_indicator[1]))
 
+                # Close the window with MA settings
                 indicator_setter.destroy()
 
+            # Add button that calls callback method
             button1 = ttk.Button(indicator_setter, text="Ok", width=10, command=callback)
             button1.pack(padx=10, pady=5, fill='x')
 
             indicator_setter.mainloop()
 
         elif chart == 'ema':
+            # Evoke similar window to that in case of SMA, main differences come with "callback" method
             indicator_setter = tk.Tk()
             indicator_setter.wm_title("Configure")
             label1 = ttk.Label(indicator_setter, text="Set the period for moving average")
@@ -94,12 +103,16 @@ def set_indicators(chart=None, bottom=None, volume=None):
             entry1.pack(padx=10, fill='x')
             entry1.focus_set()
 
+            # After "OK" button is clicked retrieve information from the entry box, write it to global variables, quit
             def callback():
                 global chart_indicator
                 chart_indicator[0] = 'ema'
                 chart_indicator[1] = int(entry1.get())
+
+                # Print confirmation to console
                 print("Indicator {} set with period of {}".format(chart_indicator[0], chart_indicator[1]))
 
+                # Close the settings window
                 indicator_setter.destroy()
 
             button1 = ttk.Button(indicator_setter, text="Ok", width=10, command=callback)
@@ -112,10 +125,12 @@ def set_indicators(chart=None, bottom=None, volume=None):
             global chart_indicator
             chart_indicator = ['name', 0]
 
+    # Indicator below the chart
     if bottom:
 
         if bottom == 'rsi':
             # Show the window to let user choose RSI period
+            # As for MAs, the windows construction is very similar and main changes come with the "callback" method
             rsi_setter = tk.Tk()
             rsi_setter.wm_title("Configure RSI")
 
@@ -126,11 +141,16 @@ def set_indicators(chart=None, bottom=None, volume=None):
             entry1.pack()
             entry1.focus_set()
 
+            # After "OK" button is clicked retrieve information from the entry box, write it to global variables, quit
             def callback():
                 global bottom_indicator
                 bottom_indicator[0] = bottom
                 bottom_indicator[1] = int(entry1.get())
+
+                # Print confirmation to console
                 print(f"Indicator set to {bottom_indicator[0]} with period of {bottom_indicator[1]}")
+
+                # Close the settings window
                 rsi_setter.destroy()
 
             button1 = ttk.Button(rsi_setter, text="Ok", width=10, command=callback)
@@ -138,13 +158,17 @@ def set_indicators(chart=None, bottom=None, volume=None):
             rsi_setter.mainloop()
 
         elif bottom == 'macd':
+            # Show the window to let user choose MACD periods
+            # As for MAs, the windows construction is very similar and main changes come with the "callback" method
             macd_setter = tk.Tk()
             macd_setter.wm_title("Configure MACD")
 
+            # Upper label
             label0 = ttk.Label(macd_setter, text="Set the periods for MACD")
             label0.grid(row=0, column=0, columnspan=2)
 
             # Slower MA is contained in first place to retain highest numer on [1] in bottom_indicator list
+            # Prepare series of rows (label/entry) pairs and set the focus the first one
             label1 = ttk.Label(macd_setter, text='Slower MA')
             label1.grid(row=1, column=0, pady=5, padx=5)
             entry1 = ttk.Entry(macd_setter)
@@ -164,6 +188,7 @@ def set_indicators(chart=None, bottom=None, volume=None):
             entry3.insert(0, 9)
             entry3.grid(row=3, column=1, pady=5, padx=5)
 
+            # After "OK" button is clicked retrieve information from the entry box, write it to global variables, quit
             def callback():
                 global bottom_indicator
                 bottom_indicator[0] = bottom
@@ -171,10 +196,12 @@ def set_indicators(chart=None, bottom=None, volume=None):
                 bottom_indicator[2] = int(entry2.get())
                 bottom_indicator[3] = int(entry3.get())
 
+                # Print confirmation to console
                 print("Indicator set to {indicator} with following parameters: {first_param}, {second_param}, "
                       "{third_param}".format(indicator=bottom_indicator[0], first_param=bottom_indicator[1],
                                              second_param=bottom_indicator[2], third_param=bottom_indicator[3]))
 
+                # Close the settings window
                 macd_setter.destroy()
 
             button1 = ttk.Button(macd_setter, text="Ok", command=callback)
@@ -183,11 +210,12 @@ def set_indicators(chart=None, bottom=None, volume=None):
             macd_setter.mainloop()
 
         elif bottom == 'disable':
-            # Restore defaults on the global variable
+            # Restore defaults in the global variable
             global bottom_indicator
             bottom_indicator = ['name', 0, 0, 0]
 
     if volume:
+        # Show volume below the chart. Only switches the variable. It is used by the charting method
         global show_volume
         if volume == 'enable':
             show_volume = 'enable'
@@ -227,7 +255,7 @@ def window_capacity_changer(window):
     else:
         raise LookupError("Given TF value not found!")
 
-    # More than 1 000 candles cause troubles with API (server return 40x response)
+    # More than 1 000 candles cause troubles with API (server return 40X response)
     # SQL can load more candles in future such distinction will be added
     if int(round(window / hours_in_tf, 0)) > 1000:
         popupmsg(msg="Number of downloaded candles exceeds 1000! \n (Indicator data also are counted in.) \n"
@@ -248,12 +276,16 @@ def popupmsg(msg, title="Error"):
     # Simple pop-up showing only title, given message and button to close it
     popup = tk.Tk()
 
+    # Close the window when "Ok" is clicked
     def leave_window():
         popup.destroy()
 
+    # Set the title
     popup.wm_title(title)
+    # Prepare and set the Label
     label = ttk.Label(popup, text=msg, font=NORM_FONT)
     label.pack(side="top", fill="x", pady=10)
+    # Create button that allows to close the window
     popup_button1 = ttk.Button(popup, text="Ok, close the window", command=leave_window)
     popup_button1.pack()
 
@@ -261,20 +293,28 @@ def popupmsg(msg, title="Error"):
 
 
 def create_bottom_indicator(pricing_data_frame):
+    # Computation for the indicators
     if bottom_indicator[0] == 'macd':
         # Method of calculating MACD: Subtract slower EMA from faster what created MACD Line. Signal line is EMA from
         # the MACD Line. Histogram is supportive and represents difference between MACD Line and signal line
+        # Information about the periods comes from the users who was first shown with the popup window
+        # that take inputs and write them to global variables
+        # Calculate slow EMA, skip first records (number of record skipped equals to period of EMA)
         pricing_data_frame['macd_ema_slow'] = pricing_data_frame['c'].ewm(span=bottom_indicator[1],
                                                                           adjust=False, min_periods=bottom_indicator[1],
                                                                           ignore_na=True).mean()
+        # Calculate fast EMA, also skip first records (number of record skipped equals to period of EMA)
         pricing_data_frame['macd_ema_fast'] = pricing_data_frame['c'].ewm(span=bottom_indicator[2],
                                                                           adjust=False, min_periods=bottom_indicator[2],
                                                                           ignore_na=True).mean()
+        # MACD line is difference of slow and fast ema
         pricing_data_frame['macd_line'] = pricing_data_frame['macd_ema_slow'] - pricing_data_frame['macd_ema_fast']
+        # Singal line is EMA of MACD Line
         pricing_data_frame['signal_line'] = pricing_data_frame['macd_line'].ewm(span=bottom_indicator[3],
                                                                                 adjust=False,
                                                                                 min_periods=bottom_indicator[3],
                                                                                 ignore_na=True).mean()
+        # Histogram is difference of MACD Line and Signal Line
         pricing_data_frame['histogram'] = pricing_data_frame['macd_line'] - pricing_data_frame['signal_line']
         return pricing_data_frame
 
@@ -296,15 +336,21 @@ def create_bottom_indicator(pricing_data_frame):
         # "Down" x value is modified to return proper value from function, RSI has no negative value so returned x
         # is converted just after it is returned and passed to the list
         # In averages NaN is returned if there was only one type of candle, it is converted to, proper in that case, 0
+
+        # Convert column values to floats
         pricing_data_frame['c'] = [float(x) for x in pricing_data_frame['c']]
         pricing_data_frame['o'] = [float(x) for x in pricing_data_frame['o']]
+        # Subtract close price from open and determine if it increased or decreased, create separate arrays for each
         pricing_data_frame['up'] = [compare(x) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
         pricing_data_frame['down'] = [abs(compare(-x)) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
+        # Calculate rolling averages for each of arrays
         pricing_data_frame['up_average'] = pricing_data_frame['up'].rolling(bottom_indicator[1], min_periods=1).mean()
         pricing_data_frame['down_average'] = pricing_data_frame['down'].rolling(bottom_indicator[1],
                                                                                 min_periods=1).mean()
+        # Convert nans in arrays to 0, inplace
         np.nan_to_num(pricing_data_frame['up_average'], False)
         np.nan_to_num(pricing_data_frame['down_average'], False)
+        # RSI calculation and scaling it to 0-100
         pricing_data_frame['RS'] = pricing_data_frame['up_average'] / pricing_data_frame['down_average']
         pricing_data_frame['RSI'] = 100 - (100 / (1 + pricing_data_frame['RS']))
 
@@ -312,10 +358,14 @@ def create_bottom_indicator(pricing_data_frame):
 
 
 def create_chart_indicator(pricing_data_frame):
+    # Computation for chart indicators. Parameters are set earlier by user which shown a pop-up windows that
+    # allows to change periods
     if chart_indicator[0] == 'sma':
+        # Rolling simple moving average
         sma = pricing_data_frame['c'].rolling(chart_indicator[1]).mean()
         return sma
     elif chart_indicator[0] == 'ema':
+        # Rolling exponential moving average
         # Options allow to show NaN on the head data
         ema = pricing_data_frame['c'].ewm(span=chart_indicator[1], adjust=False, min_periods=chart_indicator[1],
                                           ignore_na=True).mean()
@@ -323,12 +373,13 @@ def create_chart_indicator(pricing_data_frame):
 
 
 def animate(i):
-    """For animation function purposes. It reloads the data basing on the given time frame"""
+    # For animation function purposes. It reloads the data basing on the given time frame
     global f
     if animation_status and chart_open:
         data_handler = DataHandler()
         # Candles count takes into account requirement from indicators to have extra data
         # In bottom_indicator the highest number is always stored on [1] position
+        # i.e. if MA period is 14 and user request 100 candles, 114 are ultimately downloaded to evade gaps on chart
         history_data = data_handler.read_from_api(request_type='history', pair_choice=user_pair_choice,
                                                   candles_count=user_candles_count_choice + bottom_indicator[1] +
                                                   chart_indicator[1],
@@ -337,11 +388,13 @@ def animate(i):
         pricing_dates = history_data['time'].tolist()
 
         # Plots exclude by using indexing the extra indicators data that are in the data frame
+        # If statements check which of indicators are currently initialized
         if bottom_indicator[1] != 0 and chart_indicator[1] != 0:
             print("Chart with bottom indicator and MA initialized")
+            # Create bottom indicator basing on the user preferences
             history_data = create_bottom_indicator(history_data)
             chart_indicator_data = create_chart_indicator(history_data)
-            # Cut the chart by the highest number from the indicators
+            # Cut the chart by the highest number from the indicator periods
             if max(bottom_indicator[1:]) >= max(chart_indicator[1:]):
                 # MACD will create even more NaNs due to signal line
                 if bottom_indicator[0] == 'macd':
@@ -352,15 +405,21 @@ def animate(i):
                 cut = chart_indicator[1]
 
             # Plotting part
+            # 4 rows of grid for main chart, 1 space, 1 indicator chart
             a1 = plt.subplot2grid((6, 1), (0, 0), 4, 1)
+            # Clear former chart and plot that with updated pricing
             a1.clear()
+            # Separate and convert to floats each pricing column and zip it for candlestick chart
             zipped_prices = zip(range(len(pricing_dates[cut:])),  # mpl_dates.date2num(pricing_dates[cut:]),
                                 [float(x) for x in history_data.iloc[cut:]['o']],
                                 [float(x) for x in history_data.iloc[cut:]['c']],
                                 [float(x) for x in history_data.iloc[cut:]['h']],
                                 [float(x) for x in history_data.iloc[cut:]['l']])
+            # Plot candles
             mpl_finance.candlestick_ochl(a1, zipped_prices, colordown='red', colorup='green')
+            # Chart configuration, title shows chosen pair and last price
             a1.set_title("Chart of %s \nLast price: %s" % (major_pairs[user_pair_choice], history_data.iloc[-1]['c']))
+            # Disable axis on the main chart (it will be shown by the bottom indicator)
             a1.xaxis.set_visible(False)
             a1.set_ylabel("Price")
             # Plotting moving average
@@ -368,36 +427,49 @@ def animate(i):
 
             # Bottom subplot with indicator data
             a2 = plt.subplot2grid((6, 1), (4, 0), 2, 1, sharex=a1)
+            # Clear former chart and plot that with data fit to new pricing
             a2.clear()
+            # Check which indicator will be plotted
             if bottom_indicator[0] == 'macd':
+                # Show MACD Line, Signal and difference between
+                # X is for now just integers as the dates will be added manually
                 a2.plot(range(len(pricing_dates[cut:])), history_data.iloc[cut:]['macd_line'])
                 a2.plot(range(len(pricing_dates[cut:])), history_data.iloc[cut:]['signal_line'])
                 a2.fill_between(range(len(pricing_dates[cut:])), history_data.iloc[cut:]['histogram'], 0,
                                 interpolate=True, color='grey')
+                # Do not show more than 16 dates
                 a2.xaxis.set_major_locator(mpl_ticker.MaxNLocator(16))
+                # Change x axis to show dates
                 tick_labels = a2.get_xticklabels(which='both')
                 for pos, label in enumerate(tick_labels):
                     try:
+                        # Basing on the number of records determine the date
                         tick_labels[pos] = str(
                             pricing_dates[int(round(pos * (len(pricing_dates) / len(tick_labels)), 0))])[:10]
                     except LookupError:
                         tick_labels[pos] = pricing_dates[-1]
                 a2.set_xticklabels(tick_labels)
+                # Rotate the labels by 30 degrees
                 for label in a2.xaxis.get_ticklabels():
                     label.set_rotation(30)
                 # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
+                # Set y axis label for indicator
                 a2.set_ylabel("MACD")
             elif bottom_indicator[0] == 'rsi':
+                # X is for now just integers as the dates will be added manually
                 a2.plot(range(len(pricing_dates[cut:])), history_data[cut:]['RSI'])
+                # Do not show more than 16 dates
                 a2.xaxis.set_major_locator(mpl_ticker.MaxNLocator(16))
                 tick_labels = a2.get_xticklabels(which='both')
                 for pos, label in enumerate(tick_labels):
                     try:
+                        # Basing on the number of records determine the date
                         tick_labels[pos] = str(
                             pricing_dates[int(round(pos * (len(pricing_dates) / len(tick_labels)), 0))])[:10]
                     except LookupError:
                         tick_labels[pos] = pricing_dates[-1]
                 a2.set_xticklabels(tick_labels)
+                # Rotate the labels by 30 degrees
                 for label in a2.xaxis.get_ticklabels():
                     label.set_rotation(30)
                 # a2.xaxis.set_major_formatter(mpl_dates.DateFormatter("%Y-%m-%d"))
@@ -414,6 +486,7 @@ def animate(i):
             # Chart shall be count by the indicator periods due to NaN of used moving averages in them
             # It is taken into account when downloading data, user receives given time span
             # MACD needs even larger cut due to signal line created on the faster and slower MAs
+            # Methods used are similar to those in function for both chart and bottom indicator
             if bottom_indicator[0] == 'rsi':
                 cut = bottom_indicator[1]
             elif bottom_indicator[0] == 'macd':
@@ -474,6 +547,7 @@ def animate(i):
                 raise RuntimeError("Indicator not defined")
 
         elif chart_indicator[1] != 0:
+            # Methods used are similar to those in function for both chart and bottom indicator
             print("Chart with MA initialized")
             chart_indicator_data = create_chart_indicator(history_data)
             cut = chart_indicator[1]
@@ -506,6 +580,7 @@ def animate(i):
             a1.plot(range(len(pricing_dates[cut:])), chart_indicator_data[cut:])
 
         else:
+            # Methods used are similar to those in function for both chart and bottom indicator
             print("Price only chart initialized")
             cut = 0
             a1 = plt.subplot2grid((6, 1), (0, 0), 6, 1)
@@ -539,10 +614,16 @@ def animate(i):
             # Volume plotting lives outside other plotting "ifs"
             # Volume is always overlayed on the main (a1) chart axis
             print('Volume added to chart')
+            # Chart shars x axis with main chart
             a1v = a1.twinx()
+            # Fill the space between x axis (0) and volume (3rd parameter) with light blue
+            # It takes into account cutting excessive data required by the indicators
             a1v.fill_between(range(len(pricing_dates[cut:])), 0,
                              [int(x) for x in history_data.iloc[cut:]['volume']], color="#0000FF", alpha=0.5)
+            # Using scale that is 3 times larger that max value in volume allows to put volume in the lower 1/4 part
+            # of the main chart
             a1v.set_ylim(0, max(history_data.iloc[cut:]['volume']*3))
+            # Grid would overlay on the current one from main chart
             a1v.grid(False)
             a1v.set_ylabel("Volume")
 
@@ -550,10 +631,12 @@ def animate(i):
 class Application(tk.Tk):
 
     def __init__(self, *args, **kwargs):
+        # Create window, set title and icon from the folder with resources
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.wm_iconbitmap(self, bitmap="Additional\chart.ico")
         tk.Tk.wm_title(self, "Trading Station")
 
+        # Create the Frame
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
@@ -568,14 +651,15 @@ class Application(tk.Tk):
         filemenu.add_command(label='Exit', command=quit)
         menubar.add_cascade(label="File", menu=filemenu)
 
+        # Time frame menu
         change_tf = tk.Menu(menubar, tearoff=1)
-        # Probably needed number of candles to load variable
         change_tf.add_command(label="H1", command=lambda: tf_changer('H1'))
         change_tf.add_command(label="H4", command=lambda: tf_changer('H4'))
         change_tf.add_command(label="D1", command=lambda: tf_changer('D'))
         change_tf.add_command(label="W1", command=lambda: tf_changer('W'))
         menubar.add_cascade(label="Time frame", menu=change_tf)
 
+        # Period to be shown menu
         window_capacity = tk.Menu(menubar, tearoff=1)
         window_capacity.add_command(label="One Week", command=lambda: window_capacity_changer(7 * 24))
         window_capacity.add_command(label="One Month", command=lambda: window_capacity_changer(31 * 24))
@@ -584,6 +668,7 @@ class Application(tk.Tk):
         window_capacity.add_command(label="Five years", command=lambda: window_capacity_changer(5 * 365 * 24))
         menubar.add_cascade(label="Capacity", menu=window_capacity)
 
+        # Pair to be plotted menu
         pair_choice = tk.Menu(menubar, tearoff=1)
         pair_choice.add_command(label='AUD_USD', command=lambda: pair_choice_changer(0))
         pair_choice.add_command(label='EUR_CHF', command=lambda: pair_choice_changer(1))
@@ -596,6 +681,7 @@ class Application(tk.Tk):
         pair_choice.add_command(label='USD_JPY', command=lambda: pair_choice_changer(8))
         menubar.add_cascade(label="Pair", menu=pair_choice)
 
+        # Indicator menu
         indicators = tk.Menu(menubar, tearoff=1)
         indicators.add_command(label="RSI", command=lambda: set_indicators(bottom='rsi'))
         indicators.add_command(label="MACD", command=lambda: set_indicators(bottom='macd'))
@@ -609,11 +695,13 @@ class Application(tk.Tk):
         indicators.add_command(label="Hide volume", command=lambda: set_indicators(volume='disable'))
         menubar.add_cascade(label='Indicators', menu=indicators)
 
+        # Turn on/off live data menu
         start_stop = tk.Menu(menubar, tearoff=1)
         start_stop.add_command(label="Start", command=lambda: animation_changer(status='on'))
         start_stop.add_command(label="Stop", command=lambda: animation_changer(status='off'))
         menubar.add_cascade(label="Auto-update", menu=start_stop)
 
+        # Set the prepared menubar object as menu
         tk.Tk.config(self, menu=menubar)
 
         # Dictionary containg all pages (Tkinter objects)
@@ -705,10 +793,11 @@ class PageOne(tk.Frame):
                                                            candles_count=150, set_granularity='H1',
                                                            streaming_type="pricing")
         elif load_from == 'db':
-            self.history_data = data_handler.create_df(choice=user_pair_choice)
+            self.history_data = data_handler.create_df()
         else:
             raise ValueError("Invalid command!")
 
+        # Place the chart
         f = Figure(figsize=(5, 5), dpi=100)
         a = f.add_subplot(111)
         a.plot_date(

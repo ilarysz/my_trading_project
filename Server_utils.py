@@ -2,7 +2,7 @@ from functools import wraps
 from flask import session, redirect
 import threading
 from queue import Queue
-from Data_Reader import DataHandler
+from data_reader import DataHandler
 import numpy as np
 import pandas as pd
 from shared_variables import major_pairs, granularity
@@ -12,6 +12,7 @@ print_lock = threading.Lock()
 
 
 def login_required(f):
+    # Decorator, check if users is logged in
     @wraps(f)
     def wrapper(*args, **kwargs):
         if session.get('user_id') is None:
@@ -28,10 +29,7 @@ class ThreadedMACalculator:
 
         self.df = pd.DataFrame(np.zeros((len(major_pairs), len(granularity)), dtype=bool),
                                columns=granularity, index=major_pairs)
-        # self.df['symbol'] = major_pairs
-        # cols = granularity
-        # cols.insert(0, 'symbol')
-        # self.df = self.df[cols]
+
 
     def calculate_single_pair_mas(self, pair):
         data_handler = DataHandler()
@@ -48,13 +46,7 @@ class ThreadedMACalculator:
                 comparison_result = float(history_data.at[self.interval * 2 - 1, 'c']) > float(
                     sma.iat[self.interval * 2 - 1])
                 self.df.at[major_pairs[pair], timeframe] = comparison_result
-                # with print_lock:
-                #     print("Calculated sma of period {} for pair {}".format(self.interval, pair))
-                #     print("SMA", sma, "SMA last record: ", float(sma.iat[self.interval*2-1]))
-                #     print("DF", history_data['c'], "DF last record: ", float(history_data.at[self.interval*2-1,'c']))
-                #    comparison_result = float(history_data.at[self.interval*2-1,'c']) > \
-                #                        float(sma.iat[self.interval*2-1])
-                #     print("Comparison result: ", comparison_result)
+
             elif self.ma_type == 'ema':
                 # Options allow to show NaN on the head data
                 ema = history_data['c'].ewm(span=self.interval, adjust=False, min_periods=self.interval,
@@ -72,11 +64,13 @@ class ThreadedMACalculator:
             q.task_done()
 
     def calculate_mas(self):
+        # Launch separate thread for each pair
         for i in range(len(major_pairs)):
             t = threading.Thread(target=self.ma_threader)
             t.daemon = True
             t.start()
 
+        # Add pairs to the queue
         for pair in range(len(major_pairs)):
             q.put(pair)
 
@@ -95,19 +89,25 @@ class ThreadedPricingRequest:
 
     def pricing_threader(self):
         while True:
+            # Take pair number from the queue
             worker = q.get()
+            # Process within the given Thread pricing request for that pair and write it down to list
             self.request_pricing(worker)
+            # Task for that pair is done
             q.task_done()
 
     def core(self, *args, **kwargs):
+        # Launch thread for each pair
         for x in major_pairs:
             t = threading.Thread(target=self.pricing_threader)
             t.daemon = True
             t.start()
 
+        # Add pair numbers to the queue
         for worker in range(len(major_pairs)):
             q.put(worker)
 
         q.join()
+        # Sort list before returning it
         self.pricing_list = sorted(self.pricing_list, key=lambda k: k['pair'])
         return self.pricing_list
