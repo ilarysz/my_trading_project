@@ -3,7 +3,7 @@ import requests
 import json
 from datetime import datetime
 import pickle
-from utils import quandl_api_key
+from utils import QUANDL_API_KEY
 # Module currently is stand-lone, in future it will be run with server.py with data from there
 from data_reader import DataHandler
 from matplotlib import pyplot as plt
@@ -23,7 +23,7 @@ def load_from_quandl():
     # Note on 2018-11-10: there are problems with dataset on Quandl (only one existing record)
     # Using quandl API to get interest rates data
     # Prepare request parameters
-    params = dict(start_date='2018-01-01', end_date='2018-11-10', api_key=quandl_api_key)
+    params = dict(start_date='2018-01-01', end_date='2018-11-10', api_key=QUANDL_API_KEY)
     url = 'https://www.quandl.com/api/v3/datasets/RBA/F01_FIRMMCTRI'
     # Make a request and read the content (json)
     response = requests.request(method='GET', url=url, params=params)

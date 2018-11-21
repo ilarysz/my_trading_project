@@ -5,21 +5,27 @@
 {% endblock %}
 
 {% block body %}
-    <form action="/login" method="post" style="padding:10px;">
-        <div class="row justify-content-center">
-            <div class="form-group">
-                <label for="login">Login</label>
-                <input autofocus autocomplete="off" type="text" class="form-control" placeholder="Enter your username" id="login" name="login">
-            </div>
+
+<form action="/login" method="post" style="padding:10px;">
+    <div class="row justify-content-center">
+        <div class="form-group">
+            <label for="login">Login</label>
+            <input autofocus autocomplete="off" type="text" class="form-control" placeholder="Enter your username" id="login" name="login">
         </div>
-        <div class="row justify-content-center">
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-control" placeholder="Enter your password" name="password">
-            </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" class="form-control" placeholder="Enter your password" name="password">
         </div>
-        <div class="row justify-content-center">
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-    </form>
+    </div>
+    <div class="row justify-content-center">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+
+<div class="text-center">
+    <a href="/twitter/login"><button type="button" class="btn">Login with Twitter</button></a>
+</div>
+
 {% endblock %}

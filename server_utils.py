@@ -6,6 +6,9 @@ from data_reader import DataHandler
 import numpy as np
 import pandas as pd
 from shared_variables import major_pairs, granularity
+import utils
+import oauth2
+from urllib import parse
 
 q = Queue()
 print_lock = threading.Lock()
@@ -113,3 +116,45 @@ class ThreadedPricingRequest:
         # Sort list before returning it
         self.pricing_list = sorted(self.pricing_list, key=lambda k: k['pair'])
         return self.pricing_list
+
+
+class TwitterLogin:
+
+    # Class handles process of twitter authorization
+    consumer = None
+    client = None
+    request_token = None
+    oauth_verifier = None
+    token = None
+
+    @classmethod
+    def get_request_token(cls):
+        # Create Consumer and Client classes using consumer key and consumer secret key
+        cls.consumer = oauth2.Consumer(utils.CONSUMER_KEY, utils.CONSUMER_SECRET)
+        cls.client = oauth2.Client(cls.consumer)
+
+        # With Client object acquire request token and request token secret
+        response, content = cls.client.request(uri=utils.REQUEST_TOKEN_URL)
+
+        # # Break if server did not respond correctly
+        # if response != 200:
+        #     return print("Error during obtaining request token.")
+
+        # Using parse_qsl parse request token and request token secret and save it as dictionary
+        cls.request_token = dict(parse.parse_qsl(content.decode("UTF-8")))
+
+        # Take authorization address and acquired request token to create ready to use url
+        return '{}?oauth_token={}'.format(utils.AUTHORIZATION_URL, cls.request_token["oauth_token"])
+
+    @classmethod
+    def get_access_token(cls, oauth_verifier):
+        # Create token object using request token and request token secret, then set verifier
+        cls.token = oauth2.Token(cls.request_token['oauth_token'], cls.request_token['oauth_token_secret'])
+        cls.token.set_verifier(oauth_verifier)
+        cls.client = oauth2.Client(cls.consumer, cls.token)
+
+        # Using complete Client object make a request for authorization token
+        response, content = cls.client.request(utils.ACCESS_TOKEN_URL, 'POST')
+
+        # Parse received result
+        return dict(parse.parse_qsl(content.decode("UTF-8")))

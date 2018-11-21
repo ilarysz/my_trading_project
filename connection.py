@@ -42,5 +42,3 @@ class CursorCreator:
         self.cursor.close()
         self.connection.commit()
         Database.put_conn(self.connection)
-
-print("test")

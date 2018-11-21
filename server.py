@@ -1,9 +1,9 @@
 from flask import *
 from tempfile import mkdtemp
-from server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest
+from server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest, TwitterLogin
 from connection import CursorCreator, Database
 from data_reader import DataHandler
-from utils import secret_key, connection_data, mail_login, mail_password
+from utils import SECRET_KEY, connection_data, MAIL_LOGIN, MAIL_PASSWORD
 from shared_variables import major_pairs, granularity
 from werkzeug.security import generate_password_hash, check_password_hash
 import smtplib
@@ -19,7 +19,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.secret_key = secret_key
+app.secret_key = SECRET_KEY
 
 
 # Ensure responses are not cached
@@ -74,6 +74,25 @@ def login():
     else:
         session['message'] = json.dumps('Wrong method')
         return redirect('/error')
+
+
+@app.route("/twitter/login")
+def twitter_login():
+    # Obtain request token and redirect user so it can get authorization code
+    authorization_url = TwitterLogin.get_request_token()
+
+    return redirect(authorization_url)
+
+
+@app.route("/twitter/auth")
+def create_access_token():
+    # Callback uri
+    # Acquire oauth verifier from uri and basing on it and earlier information create access token
+    oauth_verifier = request.args.get('oauth_verifier')
+    access_token = TwitterLogin.get_access_token(oauth_verifier=oauth_verifier)
+    session['user_id'] = access_token['screen_name']
+
+    return redirect('/')
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -133,8 +152,8 @@ def register():
             smtp_server = smtplib.SMTP('smtp.gmail.com:587')
             smtp_server.ehlo()
             smtp_server.starttls()
-            smtp_server.login(mail_login, mail_password)
-            smtp_server.sendmail(mail_login, mail, mail_msg)
+            smtp_server.login(MAIL_LOGIN, MAIL_PASSWORD)
+            smtp_server.sendmail(MAIL_LOGIN, mail, mail_msg)
             smtp_server.quit()
         except smtplib.SMTPException:
             print("Could not send confirmation email.")
