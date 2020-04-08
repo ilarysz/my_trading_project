@@ -1,6 +1,6 @@
 """
 A collection of functions for analyzing and plotting
-financial data.   User contributions welcome!
+financial data.
 
 """
 from __future__ import (absolute_import, division, print_function,

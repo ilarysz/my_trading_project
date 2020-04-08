@@ -1,10 +1,12 @@
-from data_reader import DataHandler
-
+# Built-in libraries
+import tkinter as tk
+from tkinter import ttk
+from datetime import datetime
+# Third-party libraries
 import pandas as pd
 import numpy as np
-
+import webbrowser
 import matplotlib
-
 # matplotlib.use must be before any imports from matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -14,24 +16,20 @@ from matplotlib import style
 from matplotlib import pyplot as plt
 from matplotlib import ticker as mpl_ticker
 from matplotlib import dates as mpl_dates
+# Custom packages
+from database_methods import DataHandler
 import mpl_finance
+from api_methods import RequestPricing, RequestInstrument
+from analysis_module import IndicatorsCalculator
+# Global variables
+from shared_variables import major_pairs
 
-import tkinter as tk
-from tkinter import ttk
 
-from datetime import datetime
-
-# Set font and chart defaults
+# Set font and style
 LARGE_FONT = ("Verdana", 12)
 NORM_FONT = ("Verdana", 10)
 SMALL_FONT = ("Verdana", 8)
 style.use("ggplot")
-
-# f must be called at the top as it will be used by the animate function (that do not belong to any object)
-# and as well must be packed by the FigureCanvasTkAgg present in PageTwo to be shown by tkinter
-f = plt.figure()
-major_pairs = ("AUD_USD", "EUR_CHF", "EUR_USD", "GBP_JPY", "GBP_USD", "NZD_USD", "USD_CAD", "USD_CHF", "USD_JPY")
-
 # Set variables that will carry the chart defaults
 user_pair_choice = 0
 user_candles_count_choice = 150
@@ -42,6 +40,11 @@ show_volume = 'disable'
 animation_status = True
 chart_open = False
 first_time = False
+
+# f must be called at the top as it will be used by the animate function (that do not belong to any object)
+# and as well must be packed by the FigureCanvasTkAgg present in PageTwo to be shown by tkinter
+f = plt.figure()
+indicators_calculator = IndicatorsCalculator()
 
 
 def chart_status(status):
@@ -292,98 +295,18 @@ def popupmsg(msg, title="Error"):
     popup.mainloop()
 
 
-def create_bottom_indicator(pricing_data_frame):
-    # Computation for the indicators
-    if bottom_indicator[0] == 'macd':
-        # Method of calculating MACD: Subtract slower EMA from faster what created MACD Line. Signal line is EMA from
-        # the MACD Line. Histogram is supportive and represents difference between MACD Line and signal line
-        # Information about the periods comes from the users who was first shown with the popup window
-        # that take inputs and write them to global variables
-        # Calculate slow EMA, skip first records (number of record skipped equals to period of EMA)
-        pricing_data_frame['macd_ema_slow'] = pricing_data_frame['c'].ewm(span=bottom_indicator[1],
-                                                                          adjust=False, min_periods=bottom_indicator[1],
-                                                                          ignore_na=True).mean()
-        # Calculate fast EMA, also skip first records (number of record skipped equals to period of EMA)
-        pricing_data_frame['macd_ema_fast'] = pricing_data_frame['c'].ewm(span=bottom_indicator[2],
-                                                                          adjust=False, min_periods=bottom_indicator[2],
-                                                                          ignore_na=True).mean()
-        # MACD line is difference of slow and fast ema
-        pricing_data_frame['macd_line'] = pricing_data_frame['macd_ema_slow'] - pricing_data_frame['macd_ema_fast']
-        # Singal line is EMA of MACD Line
-        pricing_data_frame['signal_line'] = pricing_data_frame['macd_line'].ewm(span=bottom_indicator[3],
-                                                                                adjust=False,
-                                                                                min_periods=bottom_indicator[3],
-                                                                                ignore_na=True).mean()
-        # Histogram is difference of MACD Line and Signal Line
-        pricing_data_frame['histogram'] = pricing_data_frame['macd_line'] - pricing_data_frame['signal_line']
-        return pricing_data_frame
-
-    elif bottom_indicator[0] == 'rsi':
-        # Method of calculating RSI: in n-day window close-open values are calculated, separate n-day moving averages
-        # for upsides and downsides are created. Relation of it is called "RS" which is about to be used in
-        # 100 - (100/(1 + RS))
-
-        # np.apply_along_axis: 0 - across columns, 1 across rows
-        # Function used for comparisons
-        def compare(x):
-            # By default returns proper results for "up" column
-            if x > 0:
-                return x
-            else:
-                return np.nan
-
-        # Basing on the close-open comparison create lists that are passed into array
-        # "Down" x value is modified to return proper value from function, RSI has no negative value so returned x
-        # is converted just after it is returned and passed to the list
-        # In averages NaN is returned if there was only one type of candle, it is converted to, proper in that case, 0
-
-        # Convert column values to floats
-        pricing_data_frame['c'] = [float(x) for x in pricing_data_frame['c']]
-        pricing_data_frame['o'] = [float(x) for x in pricing_data_frame['o']]
-        # Subtract close price from open and determine if it increased or decreased, create separate arrays for each
-        pricing_data_frame['up'] = [compare(x) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
-        pricing_data_frame['down'] = [abs(compare(-x)) for x in pricing_data_frame['c'] - pricing_data_frame['o']]
-        # Calculate rolling averages for each of arrays
-        pricing_data_frame['up_average'] = pricing_data_frame['up'].rolling(bottom_indicator[1], min_periods=1).mean()
-        pricing_data_frame['down_average'] = pricing_data_frame['down'].rolling(bottom_indicator[1],
-                                                                                min_periods=1).mean()
-        # Convert nans in arrays to 0, inplace
-        np.nan_to_num(pricing_data_frame['up_average'], False)
-        np.nan_to_num(pricing_data_frame['down_average'], False)
-        # RSI calculation and scaling it to 0-100
-        pricing_data_frame['RS'] = pricing_data_frame['up_average'] / pricing_data_frame['down_average']
-        pricing_data_frame['RSI'] = 100 - (100 / (1 + pricing_data_frame['RS']))
-
-        return pricing_data_frame
-
-
-def create_chart_indicator(pricing_data_frame):
-    # Computation for chart indicators. Parameters are set earlier by user which shown a pop-up windows that
-    # allows to change periods
-    if chart_indicator[0] == 'sma':
-        # Rolling simple moving average
-        sma = pricing_data_frame['c'].rolling(chart_indicator[1]).mean()
-        return sma
-    elif chart_indicator[0] == 'ema':
-        # Rolling exponential moving average
-        # Options allow to show NaN on the head data
-        ema = pricing_data_frame['c'].ewm(span=chart_indicator[1], adjust=False, min_periods=chart_indicator[1],
-                                          ignore_na=True).mean()
-        return ema
-
-
 def animate(i):
     # For animation function purposes. It reloads the data basing on the given time frame
     global f
     if animation_status and chart_open:
-        data_handler = DataHandler()
         # Candles count takes into account requirement from indicators to have extra data
         # In bottom_indicator the highest number is always stored on [1] position
         # i.e. if MA period is 14 and user request 100 candles, 114 are ultimately downloaded to evade gaps on chart
-        history_data = data_handler.read_from_api(request_type='history', pair_choice=user_pair_choice,
-                                                  candles_count=user_candles_count_choice + bottom_indicator[1] +
-                                                  chart_indicator[1],
-                                                  set_granularity=user_granularity_choice, streaming_type="pricing")
+        api_connector = RequestInstrument()
+        history_data = api_connector.perform_request(pair_choice=user_pair_choice,
+                                                     candles_count=user_candles_count_choice + bottom_indicator[1] +
+                                                                   chart_indicator[1],
+                                                     set_granularity=user_granularity_choice)
         history_data['time'] = np.array(history_data['time']).astype("datetime64[s]")
         pricing_dates = history_data['time'].tolist()
 
@@ -392,8 +315,8 @@ def animate(i):
         if bottom_indicator[1] != 0 and chart_indicator[1] != 0:
             print("Chart with bottom indicator and MA initialized")
             # Create bottom indicator basing on the user preferences
-            history_data = create_bottom_indicator(history_data)
-            chart_indicator_data = create_chart_indicator(history_data)
+            history_data = indicators_calculator.create_bottom_indicator(history_data, bottom_indicator)
+            chart_indicator_data = indicators_calculator.create_chart_indicator(history_data, chart_indicator)
             # Cut the chart by the highest number from the indicator periods
             if max(bottom_indicator[1:]) >= max(chart_indicator[1:]):
                 # MACD will create even more NaNs due to signal line
@@ -481,7 +404,7 @@ def animate(i):
 
         elif bottom_indicator[1] != 0:
             print("Chart with bottom indicator initialized")
-            history_data = create_bottom_indicator(history_data)
+            history_data = indicators_calculator.create_bottom_indicator(history_data, bottom_indicator)
 
             # Chart shall be count by the indicator periods due to NaN of used moving averages in them
             # It is taken into account when downloading data, user receives given time span
@@ -549,7 +472,7 @@ def animate(i):
         elif chart_indicator[1] != 0:
             # Methods used are similar to those in function for both chart and bottom indicator
             print("Chart with MA initialized")
-            chart_indicator_data = create_chart_indicator(history_data)
+            chart_indicator_data = indicators_calculator.create_chart_indicator(history_data, chart_indicator)
             cut = chart_indicator[1]
             a1 = plt.subplot2grid((6, 1), (0, 0), 6, 1)
             a1.clear()
@@ -740,31 +663,35 @@ class StartPage(tk.Frame):
                                                                           chart_status(True)))
         # button2.grid()
         button2.pack(side='left', fill='x', expand=True, anchor='n')
-        button3 = ttk.Button(self, text='Test', command=lambda: controller.show_frame(PageOne))
+        # button3 = ttk.Button(self, text='Test', command=lambda: controller.show_frame(PageOne))
         # button3.grid()
-        button3.pack(side='left', fill='x', expand=True, anchor='n')
+        # button3.pack(side='left', fill='x', expand=True, anchor='n')
+        button4 = ttk.Button(self, text="Open website component",
+                             # command=lambda: webbrowser.open_new("http://34.229.182.65"))
+                             command=lambda: webbrowser.open_new("http://127.0.0.1:4454"))
+        button4.pack(side='left', fill='x', expand=True, anchor='n')
 
 
 class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent, bg='#3E3938')
-        fake_label = tk.Label(self, text='', width=194, bg='#3E3938', anchor='e', height=1)
-        fake_label.grid(row=0, column=0, columnspan=194)
-        fake_label_2 = tk.Label(self, text='', width=1, height=44, anchor='s', bg='#3E3938')
-        fake_label_2.grid(row=1, column=0, rowspan=44)
+        # fake_label = tk.Label(self, text='', width=194, bg='#3E3938', anchor='e', height=1)
+        # fake_label.grid(row=0, column=0, columnspan=194)
+        # fake_label_2 = tk.Label(self, text='', width=1, height=44, anchor='s', bg='#3E3938')
+        # fake_label_2.grid(row=1, column=0, rowspan=44)
         label = tk.Label(self, text="Static chart page", font=LARGE_FONT, width=20, bg='#3E3938', fg='white')
-        label.grid(row=1, column=97)
-        # label.pack(padx=10, pady=10)
+        # label.grid(row=1, column=97)
+        label.pack(padx=10, pady=10)
         # Using lambda function to prevent from immediate initialization
         button1 = ttk.Button(self, text="Return to Home Page", width=20,
                              command=lambda: controller.show_frame(StartPage))
-        button1.grid(row=2, column=97)
-        # button1.pack()
+        # button1.grid(row=2, column=97)
+        button1.pack()
         # load data that are about to be plotted (only first time the chart is shown) later only the last candle
         # is updated with usage of animate function
-        # self.create_chart()
-        self.create_table()
+        self.create_chart()
+        # self.create_table()
 
     def create_table(self):
         label_1 = tk.Label(self, text='testing', width=8, bg='white', anchor='center', height=1)
@@ -787,12 +714,12 @@ class PageOne(tk.Frame):
 
     def create_chart(self, load_from='api', user_pair_choice=0):
         # data_handler is responsible to load data from API and SQL database
-        data_handler = DataHandler()
         if load_from == 'api':
-            self.history_data = data_handler.read_from_api(request_type='history', pair_choice=user_pair_choice,
-                                                           candles_count=150, set_granularity='H1',
-                                                           streaming_type="pricing")
+            api_connector = RequestInstrument()
+            self.history_data = api_connector.perform_request(pair_choice=user_pair_choice,
+                                                              candles_count=150, set_granularity='H1')
         elif load_from == 'db':
+            data_handler = DataHandler()
             self.history_data = data_handler.create_df()
         else:
             raise ValueError("Invalid command!")
@@ -846,5 +773,5 @@ app = Application()
 app.geometry("1280x720")
 # Due to use of animation plotting function lives outside any objects
 # Activate animation only if chart page is open
-ani = animation.FuncAnimation(f, animate, interval=5000)
+ani = animation.FuncAnimation(f, animate, interval=2500)
 app.mainloop()

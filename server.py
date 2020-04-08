@@ -1,15 +1,18 @@
-from flask import *
-from tempfile import mkdtemp
-from server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest, TwitterLogin
-from connection import CursorCreator, Database
-from data_reader import DataHandler
-from utils import SECRET_KEY, connection_data, MAIL_LOGIN, MAIL_PASSWORD
-from shared_variables import major_pairs, granularity
-from werkzeug.security import generate_password_hash, check_password_hash
+# Built-in libraries
 import smtplib
 import json
+# Third-party libraries
+from flask import *
+from tempfile import mkdtemp
+from werkzeug.security import generate_password_hash, check_password_hash
+# Custom packages
+from server_utils import login_required, ThreadedMACalculator, ThreadedPricingRequest, TwitterLogin
+from database_methods import DataHandler
+# Global variables
+from shared_variables_secret import SECRET_KEY, MAIL_LOGIN, MAIL_PASSWORD
+from shared_variables import major_pairs, granularity
 
-Database.create_pool(**connection_data)
+
 data_handler = DataHandler()
 
 app = Flask(__name__, template_folder="Templates")
@@ -36,10 +39,8 @@ def after_request(response):
 def index():
 
     # Request pricing for every major pair
-    pricing_data = []
-    while not pricing_data:
-        quote = ThreadedPricingRequest()
-        pricing_data = quote.core()
+    quote = ThreadedPricingRequest()
+    pricing_data = quote.core()
 
     return render_template('index.html', pricing_data=pricing_data)
 
@@ -61,13 +62,11 @@ def login():
             return redirect('/error')
 
         # Try to load user from database
-        with CursorCreator() as cursor:
-            cursor.execute("SELECT * FROM users WHERE login = '%s'" % username)
-            user_data = cursor.fetchall()
-            if not user_data or not check_password_hash(user_data[0][2], password):
-                session['message'] = json.dumps("Wrong username or password")
-                return redirect('/error')
-            session['user_id'] = user_data[0][1]
+        user_data = data_handler.execute_db_request("SELECT * FROM users WHERE login = '%s'" % username)
+        if not user_data or not check_password_hash(user_data[0][2], password):
+            session['message'] = json.dumps("Wrong username or password")
+            return redirect('/error')
+        session['user_id'] = user_data[0][1]
 
         return redirect("/")
 
@@ -117,18 +116,16 @@ def register():
 
         # Add user to database and check if the name is not taken
         try:
-            with CursorCreator() as cursor_1:
-                cursor_1.execute("SELECT * FROM core WHERE login = %s" % username)
-                session['message'] = json.dumps('Username taken')
-                return redirect('error.html')
+            data_handler.execute_db_request("SELECT * FROM core WHERE login = %s" % username)
+            session['message'] = json.dumps('Username taken')
+            return redirect('error.html')
         except:
-            with CursorCreator() as cursor_2:
-                cursor_2.execute("INSERT INTO users(login, pass, mail) VALUES ('%s','%s','%s')" %
-                                (username, password, mail))
-                # Create for each user table with forecasts
-                for pair in major_pairs:
-                    cursor_2.execute("INSERT INTO core(symbol, login) VALUES ('{pair}','{id}')".
-                                     format(pair=pair, id=username))
+            data_handler.execute_db_request("INSERT INTO users(login, pass, mail) VALUES ('%s','%s','%s')" %
+                                            (username, password, mail), get_data=False)
+            # Create for each user table with forecasts
+            for pair in major_pairs:
+                data_handler.execute_db_request("INSERT INTO core(symbol, login) VALUES ('{pair}','{id}')".
+                                                format(pair=pair, id=username), get_data=False)
 
         # Add user_id to session (automatic login after registartion)
         session['user_id'] = username
@@ -147,7 +144,7 @@ def register():
             "Team"
         ])
 
-        # Send email, credentials are located in utils.py
+        # Send email, credentials are located in shared_variables_secret.py
         try:
             smtp_server = smtplib.SMTP('smtp.gmail.com:587')
             smtp_server.ehlo()
@@ -213,29 +210,30 @@ def forecasts_modify():
         print("Shape of df: ", forecasts_df.shape)
 
         # Read all rows in data frame
-        with CursorCreator() as cursor:
-            for row in range(forecasts_df.shape[0]):
-                print("Cheking row: ", row)
-                # Check changed column, if equals one write whole row into database
-                if forecasts_df.at[row, 'changed'] == 1:
-                    # None and NaN values have to be skipped
-                    columns = ['first_r', 'first_s', 'h1_trend_f', 'h4_trend_f', 'd1_trend_f', 'w1_trend_f']
-                    for column in range(len(columns)):
-                        print("Checking column: ", column)
-                        # Check is uers changed forecast for given pair.
-                        # If so, update row for given user and pair with new data
-                        if str(forecasts_df.iat[row, column+1]).lower() != "nan" and forecasts_df.iat[row, column+1] \
-                                is not None:
-                            if isinstance(forecasts_df.iat[row, column+1], str):
-                                print("Detected string instance: ", forecasts_df.iat[row, column+1])
-                                cursor.execute("UPDATE core SET {} = '{}' WHERE login = '{}' and symbol = '{}'".
-                                    format(columns[column], forecasts_df.iat[row, column+1], session['user_id'],
-                                    forecasts_df.iat[row, 0]))
-                            else:
-                                print("Detected numeric instance: ", forecasts_df.iat[row, column+1])
-                                cursor.execute("UPDATE core SET {} = {} WHERE login = '{}' and symbol = '{}'".
-                                    format(columns[column], forecasts_df.iat[row, column+1], session['user_id'],
-                                    forecasts_df.iat[row, 0]))
+        for row in range(forecasts_df.shape[0]):
+            print("Cheking row: ", row)
+            # Check changed column, if equals one write whole row into database
+            if forecasts_df.at[row, 'changed'] == 1:
+                # None and NaN values have to be skipped
+                columns = ['first_r', 'first_s', 'h1_trend_f', 'h4_trend_f', 'd1_trend_f', 'w1_trend_f']
+                for column in range(len(columns)):
+                    print("Checking column: ", column)
+                    # Check is uers changed forecast for given pair.
+                    # If so, update row for given user and pair with new data
+                    if str(forecasts_df.iat[row, column + 1]).lower() != "nan" and forecasts_df.iat[row, column + 1] \
+                            is not None:
+                        if isinstance(forecasts_df.iat[row, column + 1], str):
+                            print("Detected string instance: ", forecasts_df.iat[row, column + 1])
+                            data_handler.execute_db_request(
+                                "UPDATE core SET {} = '{}' WHERE login = '{}' and symbol = '{}'".
+                                format(columns[column], forecasts_df.iat[row, column + 1], session['user_id'],
+                                       forecasts_df.iat[row, 0]), get_data=False)
+                        else:
+                            print("Detected numeric instance: ", forecasts_df.iat[row, column + 1])
+                            data_handler.execute_db_request(
+                                "UPDATE core SET {} = {} WHERE login = '{}' and symbol = '{}'".
+                                format(columns[column], forecasts_df.iat[row, column + 1], session['user_id'],
+                                       forecasts_df.iat[row, 0]), get_data=False)
 
         return redirect('/forecasts')
 

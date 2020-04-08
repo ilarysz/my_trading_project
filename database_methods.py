@@ -1,10 +1,51 @@
-from connection import Database, CursorCreator
+# Third-party libraries
 import pandas as pd
-from utils import connection_data
-import trading_engine
+from psycopg2 import pool
+# Custom packages
+from shared_variables_secret import connection_data
 
-# On import of file, always create pool to local db basing on the data contained in "utils.py"
-Database.create_pool(**connection_data)
+
+class Database:
+    """Class manages connection pool with database"""
+    connection_pool = None
+
+    # Establishes connection with database
+    @classmethod
+    def create_pool(cls, minimum_l, maximum_l, database_l, user_l, password_l, host_l):
+        cls.connection_pool = pool.SimpleConnectionPool(minimum_l, maximum_l, database=database_l, user=user_l,
+                                                        password=password_l, host=host_l)
+
+    # Get connection from connection pool and return it
+    @classmethod
+    def get_conn(cls):
+        return cls.connection_pool.getconn()
+
+    # Return the connection to pool
+    @classmethod
+    def put_conn(cls, connection):
+        cls.connection_pool.putconn(connection)
+
+
+class CursorCreator:
+    """Class manages getting separate connections and cursors"""
+
+    def __init__(self):
+        self.cursor = None
+        self.connection = None
+        self.cursor = None
+
+    def __enter__(self):
+        # To evade problems with not committing/closing connection cursor is prepared to be used with "with"
+        # Retrieve one connection from the pool, prepare cursor and return it
+        self.connection = Database.get_conn()
+        self.cursor = self.connection.cursor()
+        return self.cursor
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # After execution cursor is always about to be closed, connection committed and returned to available pool
+        self.cursor.close()
+        self.connection.commit()
+        Database.put_conn(self.connection)
 
 
 class DataHandler:
@@ -60,6 +101,13 @@ class DataHandler:
         else:
             raise RuntimeError("Wrong read method passed to create_df function or no custom command present")
 
+    @staticmethod
+    def execute_db_request(custom_command, get_data=True):
+        with CursorCreator() as cursor_1:
+            cursor_1.execute(custom_command)
+            if get_data:
+                return cursor_1.fetchall()
+
     def write_to_db(self, choice=0):
         """Basing on the input from the interface loads data from the given table"""
         # Check number of rows and then for each "changed" column
@@ -85,18 +133,6 @@ class DataHandler:
                 temp[pos] = float(temp[pos])
         return temp
 
-    def read_from_api(self, request_type='history', pair_choice=0, candles_count=150, set_granularity='H1',
-                      streaming_type='pricing'):
-        """Function used to gather data from the Oanda API"""
-        # Functions calls objects from Trading Engine basing on the input from interface
-        # Objects shall live only inside DataHandler, returned for printing purposes
-        if request_type == 'history':
-            self.engine_object = trading_engine.RequestInstrument()
-            self.data_frame = self.engine_object.perform_request(candles_count, set_granularity, pair_choice)
-            return self.data_frame
-        elif request_type == 'pricing':
-            self.engine_object = trading_engine.RequestPricing()
-            self.engine_dict = self.engine_object.perform_request(streaming_type, pair_choice)
-            return self.engine_dict
-        else:
-            print("Wrong command {}".format(request_type))
+
+# On import of file, always create pool to local db basing on the data contained in "shared_variables_secret.py"
+Database.create_pool(**connection_data)
