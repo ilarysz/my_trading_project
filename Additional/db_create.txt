@@ -1,0 +1,118 @@
+-- Database: Quote
+
+-- DROP DATABASE "Quote";
+
+CREATE DATABASE "Quote"
+    WITH 
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Polish_Poland.1250'
+    LC_CTYPE = 'Polish_Poland.1250'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
+
+-- Table: public.api_history
+
+-- DROP TABLE public.api_history;
+
+CREATE TABLE public.api_history
+(
+    id integer NOT NULL,
+    symbol character varying(7) COLLATE pg_catalog."default",
+    o numeric(10,5),
+    h numeric(10,5),
+    l numeric(10,5),
+    c numeric(10,5),
+    CONSTRAINT api_history_pkey PRIMARY KEY (id),
+    CONSTRAINT api_history_symbol_fkey FOREIGN KEY (symbol)
+        REFERENCES public.api_point (symbol) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.api_history
+    OWNER to postgres;
+
+-- Table: public.api_point
+
+-- DROP TABLE public.api_point;
+
+CREATE TABLE public.api_point
+(
+    id integer NOT NULL,
+    symbol character varying(7) COLLATE pg_catalog."default",
+    o numeric(10,5),
+    h numeric(10,5),
+    l numeric(10,5),
+    c numeric(10,5),
+    CONSTRAINT api_point_pkey PRIMARY KEY (id),
+    CONSTRAINT api_point_symbol_key UNIQUE (symbol)
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.api_point
+    OWNER to postgres;
+
+-- Table: public.core
+
+-- DROP TABLE public.core;
+
+CREATE TABLE public.core
+(
+    symbol character varying(7) COLLATE pg_catalog."default" NOT NULL,
+    h1_trend character varying(1) COLLATE pg_catalog."default",
+    h4_trend character varying(1) COLLATE pg_catalog."default",
+    d1_trend character varying(1) COLLATE pg_catalog."default",
+    w1_trend character varying(1) COLLATE pg_catalog."default",
+    h1_trend_f character varying(5) COLLATE pg_catalog."default",
+    h4_trend_f character varying(5) COLLATE pg_catalog."default",
+    d1_trend_f character varying(5) COLLATE pg_catalog."default",
+    w1_trend_f character varying(5) COLLATE pg_catalog."default",
+    comment character varying(255) COLLATE pg_catalog."default",
+    first_s real,
+    first_r real,
+    login character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT h4_trend_var CHECK (h4_trend::text = 'u'::text OR h4_trend::text = 'd'::text OR h4_trend::text = 'c'::text),
+    CONSTRAINT h1_trend_var CHECK (h1_trend::text = 'u'::text OR h1_trend::text = 'd'::text OR h1_trend::text = 'c'::text),
+    CONSTRAINT d1_trend_var CHECK (d1_trend::text = 'u'::text OR d1_trend::text = 'd'::text OR d1_trend::text = 'c'::text),
+    CONSTRAINT w1_trend_var CHECK (w1_trend::text = 'u'::text OR w1_trend::text = 'd'::text OR w1_trend::text = 'c'::text),
+    CONSTRAINT h1_trend_f_var CHECK (h1_trend_f::text = 'u'::text OR h1_trend_f::text = 'd'::text OR h1_trend_f::text = 'c'::text),
+    CONSTRAINT h4_trend_f_var CHECK (h4_trend_f::text = 'u'::text OR h4_trend_f::text = 'd'::text OR h4_trend_f::text = 'c'::text),
+    CONSTRAINT d1_trend_f_var CHECK (d1_trend_f::text = 'u'::text OR d1_trend_f::text = 'd'::text OR d1_trend_f::text = 'c'::text),
+    CONSTRAINT w1_trend_f_var CHECK (w1_trend_f::text = 'u'::text OR w1_trend_f::text = 'd'::text OR w1_trend_f::text = 'c'::text)
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.core
+    OWNER to postgres;
+
+-- Table: public.users
+
+-- DROP TABLE public.users;
+
+CREATE TABLE public.users
+(
+    id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+    login character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    pass character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    mail character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_login_key UNIQUE (login)
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.users
+    OWNER to postgres;

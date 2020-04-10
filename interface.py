@@ -773,5 +773,5 @@ app = Application()
 app.geometry("1280x720")
 # Due to use of animation plotting function lives outside any objects
 # Activate animation only if chart page is open
-ani = animation.FuncAnimation(f, animate, interval=2500)
+ani = animation.FuncAnimation(f, animate, interval=5000)
 app.mainloop()

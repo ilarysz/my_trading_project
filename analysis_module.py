@@ -261,6 +261,7 @@ class TradingEngine(FundamentalAnalysis, IndicatorsCalculator):
 
             for i in range(len(major_pairs)):
                 self.simple_closing_module(i)
+            sleep(sleep_time)
 
 
 if __name__ == '__main__':
